@@ -1,7 +1,7 @@
 import os
 import logging
+import sqlite3
 import json
-from urllib.parse import urlparse
 from dotenv import load_dotenv
 from telegram import (
     InlineKeyboardButton, InlineKeyboardMarkup,
@@ -22,84 +22,149 @@ load_dotenv()
 class Config:
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
-    DATA_FILE = "bot_data.json"
+    DB_FILE = "bot_data.db"
     
     DEFAULT_CONFIG = {
         "channels": {
-            "1": os.getenv("CHANNEL_1_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
-            "2": os.getenv("CHANNEL_2_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
-            "3": os.getenv("CHANNEL_3_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
-            "4": os.getenv("CHANNEL_4_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
-            "5": os.getenv("CHANNEL_5_URL", "https://t.me/+do4Tny-BtTRkMWI1")
+            "1": os.getenv("CHANNEL_1_URL", ),
+            "2": os.getenv("CHANNEL_2_URL", ),
+            "3": os.getenv("CHANNEL_3_URL", ),
+            "4": os.getenv("CHANNEL_4_URL", ),
+            "5": os.getenv("CHANNEL_5_URL", )
         },
         "images": [
-            os.getenv("IMAGE_1_URL", "https://i.postimg.cc/sDm5WJFb/b6c9ab57-dcf3-44bc-a69e-b83d6bbe5656.jpg"),
-            os.getenv("IMAGE_2_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
-            os.getenv("IMAGE_3_URL", "https://i.postimg.cc/TYQ6N4rk/photo-2025-03-25-02-48-53.jpg"),
-            os.getenv("IMAGE_4_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
-            os.getenv("IMAGE_5_URL", "https://i.imgur.com/RBYp6fG.jpg"),
-            os.getenv("IMAGE_6_URL", "https://i.imgur.com/MYQxwrs.jpg")
+            os.getenv("IMAGE_1_URL", ""),
+            os.getenv("IMAGE_2_URL", ""),
+            os.getenv("IMAGE_3_URL", ""),
+            os.getenv("IMAGE_4_URL", ""),
+            os.getenv("IMAGE_5_URL", ""),
+            os.getenv("IMAGE_6_URL", "")
         ],
-        "promo_text": os.getenv("PROMO_TEXT", "🎰 Yono-777 >> BIGGEST VoucherCode Coming For All User's !! 😱😱"),
-        "promo_link": os.getenv("PROMO_LINK", "https://yonopromocodes.com/"),
-        "jaiho_link": os.getenv("JAIHO_LINK", "https://jaiho777agent2.com/?code=KZM38WKW22G&t=1744515002"),
-        "claim_link": os.getenv("CLAIM_LINK", "https://yonopromocodes.com/claim")
+        "promo_text": os.getenv("PROMO_TEXT", ""),
+        "promo_link": os.getenv("PROMO_LINK", ""),
+        "jaiho_link": os.getenv("JAIHO_LINK", ""),
+        "claim_link": os.getenv("CLAIM_LINK", "")
     }
 
     @classmethod
-    def validate_config(cls):
-        """Validate URLs in the default configuration."""
-        for key, url in cls.DEFAULT_CONFIG['channels'].items():
-            if not cls.is_valid_url(url, is_channel=True):
-                logger.error(f"Invalid channel URL for {key}: {url}")
-                raise ValueError(f"Invalid channel URL for {key}: {url}")
-        for i, url in enumerate(cls.DEFAULT_CONFIG['images'], 1):
-            if not cls.is_valid_url(url):
-                logger.error(f"Invalid image URL for image {i}: {url}")
-                raise ValueError(f"Invalid image URL for image {i}: {url}")
-        for key in ['promo_link', 'jaiho_link', 'claim_link']:
-            if not cls.is_valid_url(cls.DEFAULT_CONFIG[key]):
-                logger.error(f"Invalid URL for {key}: {cls.DEFAULT_CONFIG[key]}")
-                raise ValueError(f"Invalid URL for {key}: {cls.DEFAULT_CONFIG[key]}")
-
-    @staticmethod
-    def is_valid_url(url: str, is_channel: bool = False) -> bool:
-        """Check if a URL is valid (HTTP/HTTPS with a domain). For channels, ensure it starts with https://t.me/."""
+    def init_db(cls):
+        """Initialize the SQLite database and create tables if they don't exist."""
         try:
-            result = urlparse(url)
-            if not all([result.scheme in ['http', 'https'], result.netloc]):
-                return False
-            if is_channel and not url.startswith('https://t.me/'):
-                return False
-            return True
-        except ValueError:
-            return False
+            with sqlite3.connect(cls.DB_FILE) as conn:
+                cursor = conn.cursor()
+                # Create channels table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS channels (
+                        id TEXT PRIMARY KEY,
+                        url TEXT NOT NULL
+                    )
+                ''')
+                # Create images table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS images (
+                        id INTEGER PRIMARY KEY,
+                        url TEXT NOT NULL
+                    )
+                ''')
+                # Create texts table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS texts (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    )
+                ''')
+                conn.commit()
+                
+                # Check if tables are empty and populate with default data
+                cursor.execute("SELECT COUNT(*) FROM channels")
+                if cursor.fetchone()[0] == 0:
+                    for id, url in cls.DEFAULT_CONFIG["channels"].items():
+                        cursor.execute("INSERT INTO channels (id, url) VALUES (?, ?)", (id, url))
+                
+                cursor.execute("SELECT COUNT(*) FROM images")
+                if cursor.fetchone()[0] == 0:
+                    for idx, url in enumerate(cls.DEFAULT_CONFIG["images"], 1):
+                        cursor.execute("INSERT INTO images (id, url) VALUES (?, ?)", (idx, url))
+                
+                cursor.execute("SELECT COUNT(*) FROM texts")
+                if cursor.fetchone()[0] == 0:
+                    text_fields = [
+                        ("promo_text", cls.DEFAULT_CONFIG["promo_text"]),
+                        ("promo_link", cls.DEFAULT_CONFIG["promo_link"]),
+                        ("jaiho_link", cls.DEFAULT_CONFIG["jaiho_link"]),
+                        ("claim_link", cls.DEFAULT_CONFIG["claim_link"])
+                    ]
+                    cursor.executemany("INSERT INTO texts (key, value) VALUES (?, ?)", text_fields)
+                
+                conn.commit()
+                logger.info("Database initialized successfully")
+        except sqlite3.Error as e:
+            logger.error(f"Error initializing database: {e}")
+            raise
 
     @classmethod
     def load_data(cls):
+        """Load data from SQLite database."""
         try:
-            with open(cls.DATA_FILE, 'r') as f:
-                data = json.load(f)
-                logger.info("Loaded data from JSON file")
+            with sqlite3.connect(cls.DB_FILE) as conn:
+                cursor = conn.cursor()
+                
+                # Load channels
+                cursor.execute("SELECT id, url FROM channels")
+                channels = {row[0]: row[1] for row in cursor.fetchall()}
+                
+                # Load images
+                cursor.execute("SELECT url FROM images ORDER BY id")
+                images = [row[0] for row in cursor.fetchall()]
+                
+                # Load texts
+                cursor.execute("SELECT key, value FROM texts")
+                texts = {row[0]: row[1] for row in cursor.fetchall()}
+                
+                data = {
+                    "channels": channels,
+                    "images": images,
+                    "promo_text": texts.get("promo_text", cls.DEFAULT_CONFIG["promo_text"]),
+                    "promo_link": texts.get("promo_link", cls.DEFAULT_CONFIG["promo_link"]),
+                    "jaiho_link": texts.get("jaiho_link", cls.DEFAULT_CONFIG["jaiho_link"]),
+                    "claim_link": texts.get("claim_link", cls.DEFAULT_CONFIG["claim_link"])
+                }
+                
+                logger.info(f"Loaded data from database: {data}")
                 return data
-        except FileNotFoundError:
-            logger.warning(f"Data file {cls.DATA_FILE} not found, using default config")
-            return cls.DEFAULT_CONFIG
-        except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON from {cls.DATA_FILE}: {e}")
-            return cls.DEFAULT_CONFIG
-        except Exception as e:
-            logger.error(f"Unexpected error loading data: {e}")
+        except sqlite3.Error as e:
+            logger.error(f"Error loading data from database: {e}")
             return cls.DEFAULT_CONFIG
 
     @classmethod
     def save_data(cls, data):
+        """Save data to SQLite database."""
         try:
-            with open(cls.DATA_FILE, 'w') as f:
-                json.dump(data, f, indent=4)
-                logger.info("Saved data to JSON file")
-        except Exception as e:
-            logger.error(f"Error saving data to {cls.DATA_FILE}: {e}")
+            with sqlite3.connect(cls.DB_FILE) as conn:
+                cursor = conn.cursor()
+                
+                # Save channels
+                for id, url in data["channels"].items():
+                    cursor.execute("INSERT OR REPLACE INTO channels (id, url) VALUES (?, ?)", (id, url))
+                
+                # Save images
+                cursor.execute("DELETE FROM images")  # Clear existing images
+                for idx, url in enumerate(data["images"], 1):
+                    cursor.execute("INSERT INTO images (id, url) VALUES (?, ?)", (idx, url))
+                
+                # Save texts
+                text_fields = [
+                    ("promo_text", data["promo_text"]),
+                    ("promo_link", data["promo_link"]),
+                    ("jaiho_link", data["jaiho_link"]),
+                    ("claim_link", data["claim_link"])
+                ]
+                cursor.executemany("INSERT OR REPLACE INTO texts (key, value) VALUES (?, ?)", text_fields)
+                
+                conn.commit()
+                logger.info(f"Saved data to database: {data}")
+        except sqlite3.Error as e:
+            logger.error(f"Error saving data to database: {e}")
 
 # Admin conversation states
 (
@@ -125,6 +190,7 @@ logger = logging.getLogger(__name__)
 
 class BotHandlers:
     def __init__(self):
+        Config.init_db()  # Initialize the database
         self.data = Config.load_data()
 
     def save_config(self):
@@ -140,7 +206,6 @@ class BotHandlers:
         message = update.message
         
         try:
-            # Check if message has photos
             if message.photo:
                 photos = message.photo
                 if len(photos) == 3:
@@ -182,9 +247,7 @@ class BotHandlers:
             )
 
             inline_keyboard = [
-                [ 
-                    InlineKeyboardButton("Coming Here", url=self.data['channels']['1'])
-                ],
+                [InlineKeyboardButton("Coming Here", url=self.data['channels']['1'])],
                 [
                     InlineKeyboardButton("🎯 Join ✅", url=self.data['channels']['2']),
                     InlineKeyboardButton("🎯 Join ✅", url=self.data['channels']['3'])
@@ -210,12 +273,11 @@ class BotHandlers:
                 [KeyboardButton("Jaiho Arcade"), KeyboardButton("Lucky Gullak")]
             ]
             reply_markup_custom = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True)
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text='<a href="https://t.me/+P0g3FjFHmC05MDY1">Claim Fast Very Limited</a>!! 😱🤞🦁',
-                    parse_mode='HTML',
-                    disable_web_page_preview=True
-                )
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Select an option below:",
+                reply_markup=reply_markup_custom
+            )
 
         except TelegramError as e:
             logger.error(f"Error in send_promo_message: {e}")
@@ -233,9 +295,8 @@ class BotHandlers:
         
         try:
             if query.data == "claim":
-                # Use up to 7 images for the gallery
                 chat_id = query.message.chat_id if hasattr(query.message, "chat_id") else query.message.chat.id
-                images = self.data['images'][:7]
+                images = self.data['images'][:7]  # Use up to 7 images
                 media_group = [InputMediaPhoto(media=img) for img in images]
                 if media_group:
                     await context.bot.send_media_group(chat_id=chat_id, media=media_group)
@@ -446,10 +507,6 @@ class BotHandlers:
         new_url = update.message.text
         channel_num = context.user_data['editing_channel']
         
-        if not Config.is_valid_url(new_url, is_channel=True):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid Telegram channel URL (starting with https://t.me/).")
-            return EDIT_SINGLE_CHANNEL
-        
         try:
             self.data['channels'][channel_num] = new_url
             self.save_config()
@@ -482,10 +539,6 @@ class BotHandlers:
         logger.info(f"Editing image {context.user_data['editing_image'] + 1} with new URL: {update.message.text}")
         new_url = update.message.text
         img_num = context.user_data['editing_image']
-        
-        if not Config.is_valid_url(new_url):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_SINGLE_IMAGE
         
         try:
             self.data['images'][img_num] = new_url
@@ -523,7 +576,7 @@ class BotHandlers:
             return ConversationHandler.END
 
     async def edit_promo_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logger.info(f"Editing promo text with new value")
+        logger.info(f"Editing promo text with new value: {update.message.text}")
         new_text = update.message.text
         try:
             self.data['promo_text'] = new_text
@@ -538,10 +591,6 @@ class BotHandlers:
     async def edit_promo_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing promo link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_PROMO_LINK
-        
         try:
             self.data['promo_link'] = new_link
             self.save_config()
@@ -555,10 +604,6 @@ class BotHandlers:
     async def edit_jaiho_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing JaiHo link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_JAIHO_LINK
-        
         try:
             self.data['jaiho_link'] = new_link
             self.save_config()
@@ -572,10 +617,6 @@ class BotHandlers:
     async def edit_claim_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing claim link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_CLAIM_LINK
-        
         try:
             self.data['claim_link'] = new_link
             self.save_config()
@@ -607,35 +648,21 @@ class BotHandlers:
         return ConversationHandler.END
 
 def main():
-    # Check required environment variables
-    required_vars = [
-        "BOT_TOKEN", "ADMIN_CHAT_ID",
-        "CHANNEL_1_URL", "CHANNEL_2_URL", "CHANNEL_3_URL", "CHANNEL_4_URL", "CHANNEL_5_URL",
-        "IMAGE_1_URL", "IMAGE_2_URL", "IMAGE_3_URL", "IMAGE_4_URL", "IMAGE_5_URL", "IMAGE_6_URL",
-        "PROMO_LINK", "PROMO_TEXT", "JAIHO_LINK", "CLAIM_LINK"
-    ]
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
-    if missing_vars:
-        logger.error(f"Missing environment variables: {', '.join(missing_vars)}")
+    if not Config.BOT_TOKEN:
+        logger.error("Error: BOT_TOKEN not found in environment variables")
+        exit(1)
+    if not Config.ADMIN_CHAT_ID:
+        logger.error("Error: ADMIN_CHAT_ID not found in environment variables")
         exit(1)
 
-    # Validate configuration
-    try:
-        Config.validate_config()
-    except ValueError as e:
-        logger.error(f"Configuration validation failed: {e}")
-        exit(1)
+    logger.info(f"BOT_TOKEN: {Config.BOT_TOKEN}")
+    logger.info(f"ADMIN_CHAT_ID: {Config.ADMIN_CHAT_ID}")
 
-    logger.info(f"Starting bot with ADMIN_CHAT_ID: {Config.ADMIN_CHAT_ID}")
-    
-    # Initialize BotHandlers
     bot_handlers = BotHandlers()
 
     try:
-        # Build the application
         app = ApplicationBuilder().token(Config.BOT_TOKEN).build()
 
-        # Define the ConversationHandler with bot_handlers instance methods
         admin_conv_handler = ConversationHandler(
             entry_points=[CommandHandler('admin', bot_handlers.admin_start)],
             states={
@@ -658,7 +685,6 @@ def main():
             per_message=False
         )
 
-        # Add handlers to the application
         app.add_handler(CommandHandler("start", bot_handlers.handle_start_with_images))
         app.add_handler(CallbackQueryHandler(bot_handlers.button_callback))
         app.add_handler(MessageHandler(
