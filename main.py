@@ -210,11 +210,12 @@ class BotHandlers:
                 [KeyboardButton("Jaiho Arcade"), KeyboardButton("Lucky Gullak")]
             ]
             reply_markup_custom = ReplyKeyboardMarkup(custom_keyboard, resize_keyboard=True)
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text="Select an option below:",
-                reply_markup=reply_markup_custom
-            )
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text='<a href="https://t.me/+P0g3FjFHmC05MDY1">Claim Fast Very Limited</a>!! 😱🤞🦁',
+                    parse_mode='HTML',
+                    disable_web_page_preview=True
+                )
 
         except TelegramError as e:
             logger.error(f"Error in send_promo_message: {e}")
