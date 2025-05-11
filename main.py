@@ -25,24 +25,24 @@ class Config:
     
     DEFAULT_CONFIG = {
         "channels": {
-            "1": "https://t.me/+do4Tny-BtTRkMWI1",
-            "2": "https://t.me/+8Zv_MaEzD6JjNTk9",
-            "3": "https://t.me/+do4Tny-BtTRkMWI1",
-            "4": "https://t.me/+8Zv_MaEzD6JjNTk9",
-            "5": "https://t.me/+do4Tny-BtTRkMWI1"
+            "1": os.getenv("CHANNEL_1_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
+            "2": os.getenv("CHANNEL_2_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
+            "3": os.getenv("CHANNEL_3_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
+            "4": os.getenv("CHANNEL_4_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
+            "5": os.getenv("CHANNEL_5_URL", "https://t.me/+do4Tny-BtTRkMWI1")
         },
         "images": [
-            "https://i.postimg.cc/sDm5WJFb/b6c9ab57-dcf3-44bc-a69e-b83d6bbe5656.jpg",
-            "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg",
-            "https://i.postimg.cc/TYQ6N4rk/photo-2025-03-25-02-48-53.jpg",
-            "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg",
-            "https://i.imgur.com/RBYp6fG.jpg",
-            "https://i.imgur.com/MYQxwrs.jpg"
+            os.getenv("IMAGE_1_URL", "https://i.postimg.cc/sDm5WJFb/b6c9ab57-dcf3-44bc-a69e-b83d6bbe5656.jpg"),
+            os.getenv("IMAGE_2_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
+            os.getenv("IMAGE_3_URL", "https://i.postimg.cc/TYQ6N4rk/photo-2025-03-25-02-48-53.jpg"),
+            os.getenv("IMAGE_4_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
+            os.getenv("IMAGE_5_URL", "https://i.imgur.com/RBYp6fG.jpg"),
+            os.getenv("IMAGE_6_URL", "https://i.imgur.com/MYQxwrs.jpg")
         ],
-        "promo_text": "🎰 Yono-777 >> BIGGEST VoucherCode Coming For All User's !! 😱😱",
-        "promo_link": "https://yonopromocodes.com/",
-        "jaiho_link": "https://jaiho777agent2.com/?code=KZM38WKW22G&t=1744515002",
-        "claim_link": "https://yonopromocodes.com/claim"
+        "promo_text": os.getenv("PROMO_TEXT", "🎰 Yono-777 >> BIGGEST VoucherCode Coming For All User's !! 😱😱"),
+        "promo_link": os.getenv("PROMO_LINK", "https://yonopromocodes.com/"),
+        "jaiho_link": os.getenv("JAIHO_LINK", "https://jai�"),
+        "claim_link": os.getenv("CLAIM_LINK", "https://yonopromocodes.com/claim")
     }
 
     @classmethod
