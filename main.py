@@ -1,7 +1,6 @@
 import os
 import logging
 import json
-from urllib.parse import urlparse
 from dotenv import load_dotenv
 from telegram import (
     InlineKeyboardButton, InlineKeyboardMarkup,
@@ -26,57 +25,32 @@ class Config:
     
     DEFAULT_CONFIG = {
         "channels": {
-            "1": os.getenv("CHANNEL_1_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
-            "2": os.getenv("CHANNEL_2_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
-            "3": os.getenv("CHANNEL_3_URL", "https://t.me/+do4Tny-BtTRkMWI1"),
-            "4": os.getenv("CHANNEL_4_URL", "https://t.me/+8Zv_MaEzD6JjNTk9"),
-            "5": os.getenv("CHANNEL_5_URL", "https://t.me/+do4Tny-BtTRkMWI1")
+            "1": "https://t.me/+do4Tny-BtTRkMWI1",
+            "2": "https://t.me/+8Zv_MaEzD6JjNTk9",
+            "3": "https://t.me/+do4Tny-BtTRkMWI1",
+            "4": "https://t.me/+8Zv_MaEzD6JjNTk9",
+            "5": "https://t.me/+do4Tny-BtTRkMWI1"
         },
         "images": [
-            os.getenv("IMAGE_1_URL", "https://i.postimg.cc/sDm5WJFb/b6c9ab57-dcf3-44bc-a69e-b83d6bbe5656.jpg"),
-            os.getenv("IMAGE_2_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
-            os.getenv("IMAGE_3_URL", "https://i.postimg.cc/TYQ6N4rk/photo-2025-03-25-02-48-53.jpg"),
-            os.getenv("IMAGE_4_URL", "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg"),
-            os.getenv("IMAGE_5_URL", "https://i.imgur.com/RBYp6fG.jpg"),
-            os.getenv("IMAGE_6_URL", "https://i.imgur.com/MYQxwrs.jpg")
+            "https://i.postimg.cc/sDm5WJFb/b6c9ab57-dcf3-44bc-a69e-b83d6bbe5656.jpg",
+            "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg",
+            "https://i.postimg.cc/TYQ6N4rk/photo-2025-03-25-02-48-53.jpg",
+            "https://i.postimg.cc/509TZw8w/photo-2025-03-28-02-00-00-2.jpg",
+            "https://i.imgur.com/RBYp6fG.jpg",
+            "https://i.imgur.com/MYQxwrs.jpg"
         ],
-        "promo_text": os.getenv("PROMO_TEXT", "🎰 Yono-777 >> BIGGEST VoucherCode Coming For All User's !! 😱😱"),
-        "promo_link": os.getenv("PROMO_LINK", "https://yonopromocodes.com/"),
-        "jaiho_link": os.getenv("JAIHO_LINK", "https://jaiho777agent2.com/?code=KZM38WKW22G&t=1744515002"),
-        "claim_link": os.getenv("CLAIM_LINK", "https://yonopromocodes.com/claim")
+        "promo_text": "🎰 Yono-777 >> BIGGEST VoucherCode Coming For All User's !! 😱😱",
+        "promo_link": "https://yonopromocodes.com/",
+        "jaiho_link": "https://jaiho777agent2.com/?code=KZM38WKW22G&t=1744515002",
+        "claim_link": "https://yonopromocodes.com/claim"
     }
-
-    @classmethod
-    def validate_config(cls):
-        """Validate URLs in the default configuration."""
-        for key, url in cls.DEFAULT_CONFIG['channels'].items():
-            if not cls.is_valid_url(url):
-                logger.error(f"Invalid channel URL for {key}: {url}")
-                raise ValueError(f"Invalid channel URL for {key}: {url}")
-        for i, url in enumerate(cls.DEFAULT_CONFIG['images'], 1):
-            if not cls.is_valid_url(url):
-                logger.error(f"Invalid image URL for image {i}: {url}")
-                raise ValueError(f"Invalid image URL for image {i}: {url}")
-        for key in ['promo_link', 'jaiho_link', 'claim_link']:
-            if not cls.is_valid_url(cls.DEFAULT_CONFIG[key]):
-                logger.error(f"Invalid URL for {key}: {cls.DEFAULT_CONFIG[key]}")
-                raise ValueError(f"Invalid URL for {key}: {cls.DEFAULT_CONFIG[key]}")
-
-    @staticmethod
-    def is_valid_url(url: str) -> bool:
-        """Check if a URL is valid (HTTP/HTTPS with a domain)."""
-        try:
-            result = urlparse(url)
-            return all([result.scheme in ['http', 'https'], result.netloc])
-        except ValueError:
-            return False
 
     @classmethod
     def load_data(cls):
         try:
             with open(cls.DATA_FILE, 'r') as f:
                 data = json.load(f)
-                logger.info("Loaded data from JSON file")
+                logger.info(f"Loaded data: {data}")
                 return data
         except FileNotFoundError:
             logger.warning(f"Data file {cls.DATA_FILE} not found, using default config")
@@ -93,7 +67,7 @@ class Config:
         try:
             with open(cls.DATA_FILE, 'w') as f:
                 json.dump(data, f, indent=4)
-                logger.info("Saved data to JSON file")
+                logger.info(f"Saved data: {data}")
         except Exception as e:
             logger.error(f"Error saving data to {cls.DATA_FILE}: {e}")
 
@@ -228,9 +202,9 @@ class BotHandlers:
         
         try:
             if query.data == "claim":
-                # Use up to 7 images for the gallery
+                # Uploaded imager moto: 7 image gallery, promo text, inline keyboard, and "Claim Fast Very Limited !!" message
                 chat_id = query.message.chat_id if hasattr(query.message, "chat_id") else query.message.chat.id
-                images = self.data['images'][:7]  # Fixed: Use up to 7 images
+                images = self.data['images'][:1]  # Use up to 7 images if available
                 media_group = [InputMediaPhoto(media=img) for img in images]
                 if media_group:
                     await context.bot.send_media_group(chat_id=chat_id, media=media_group)
@@ -445,10 +419,6 @@ class BotHandlers:
         new_url = update.message.text
         channel_num = context.user_data['editing_channel']
         
-        if not Config.is_valid_url(new_url):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_SINGLE_CHANNEL
-        
         try:
             self.data['channels'][channel_num] = new_url
             self.save_config()
@@ -481,10 +451,6 @@ class BotHandlers:
         logger.info(f"Editing image {context.user_data['editing_image'] + 1} with new URL: {update.message.text}")
         new_url = update.message.text
         img_num = context.user_data['editing_image']
-        
-        if not Config.is_valid_url(new_url):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_SINGLE_IMAGE
         
         try:
             self.data['images'][img_num] = new_url
@@ -522,7 +488,7 @@ class BotHandlers:
             return ConversationHandler.END
 
     async def edit_promo_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        logger.info(f"Editing promo text with new value")
+        logger.info(f"Editing promo text with new value: {update.message.text}")
         new_text = update.message.text
         try:
             self.data['promo_text'] = new_text
@@ -537,10 +503,6 @@ class BotHandlers:
     async def edit_promo_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing promo link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_PROMO_LINK
-        
         try:
             self.data['promo_link'] = new_link
             self.save_config()
@@ -554,10 +516,6 @@ class BotHandlers:
     async def edit_jaiho_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing JaiHo link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_JAIHO_LINK
-        
         try:
             self.data['jaiho_link'] = new_link
             self.save_config()
@@ -571,10 +529,6 @@ class BotHandlers:
     async def edit_claim_link(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Editing claim link with new value: {update.message.text}")
         new_link = update.message.text
-        if not Config.is_valid_url(new_link):
-            await update.message.reply_text("⚠️ Invalid URL. Please provide a valid HTTP/HTTPS URL.")
-            return EDIT_CLAIM_LINK
-        
         try:
             self.data['claim_link'] = new_link
             self.save_config()
@@ -613,14 +567,9 @@ def main():
         logger.error("Error: ADMIN_CHAT_ID not found in environment variables")
         exit(1)
 
-    try:
-        Config.validate_config()  # Validate URLs before starting
-    except ValueError as e:
-        logger.error(f"Configuration validation failed: {e}")
-        exit(1)
+    logger.info(f"BOT_TOKEN: {Config.BOT_TOKEN}")
+    logger.info(f"ADMIN_CHAT_ID: {Config.ADMIN_CHAT_ID}")
 
-    logger.info(f"Starting bot with ADMIN_CHAT_ID: {Config.ADMIN_CHAT_ID}")
-    
     # Initialize BotHandlers
     bot_handlers = BotHandlers()
 
